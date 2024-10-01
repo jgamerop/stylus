@@ -1,7 +1,7 @@
-import {$ $$ $create messageBox scrollElementIntoView} from '/js/dom';
+import {$, $$, $create, messageBox, scrollElementIntoView} from '/js/dom';
 import {$entry} from '/js/render';
 import {API} from '/js/msg';
-import {filterAndAppend filtersSelector} from '/js/filters';
+import {filterAndAppend, filtersSelector} from '/js/filters';
 import {newUI} from '/js/manage';
 import * as prefs from '/js/prefs';
 /* global sorter */

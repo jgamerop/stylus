@@ -88,9 +88,9 @@ function makeEntry(entry, file, output, opts) {
     },
     plugins: [
       ...PLUGINS,
+      copyAndWatch([`${entry}.html`], {__ENTRY_JS: entryJs, __ENTRY_CSS: entryCss}),
       entry && entry !== ENTRY_BG && PLUGIN_CSS,
       PLUGIN_TERSER,
-      copyAndWatch([`${entry}.html`], {__ENTRY_JS: entryJs, __ENTRY_CSS: entryCss}),
     ].filter(Boolean),
     ...opts,
   });

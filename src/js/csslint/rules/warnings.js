@@ -1,5 +1,3 @@
-import {registerRuleEvents} from './util';
-
 export default [{
   desc: 'Parser warnings.',
 }, (rule, parser, reporter) => {

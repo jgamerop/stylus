@@ -12,7 +12,7 @@ import {
   clipString,
   FIREFOX,
   getActiveTab,
-  isEmptyObj,
+  isEmptyObj, MF,
   stringAsRegExpStr,
   UA,
   UCD,
@@ -28,7 +28,7 @@ let styleFinder;
 const installed = $('#installed');
 const WRITE_FRAME_SEL = '.match:not([data-frame-id="0"]):not(.dupe)';
 const ENTRY_ID_PREFIX_RAW = 'style-';
-const EXT_NAME = `<${chrome.runtime.getManifest().name}>`;
+const EXT_NAME = `<${MF.name}>`;
 const xo = new IntersectionObserver(onIntersect);
 const $entry = styleOrId => $(`#${ENTRY_ID_PREFIX_RAW}${styleOrId.id || styleOrId}`);
 

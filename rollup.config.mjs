@@ -3,26 +3,28 @@ import {babel} from '@rollup/plugin-babel';
 import commonjs from '@rollup/plugin-commonjs';
 import {nodeResolve} from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
+import {rollupPluginHTML as html} from '@web/rollup-plugin-html';
 import {Buffer} from 'buffer';
 import deepmerge from 'deepmerge';
 import fs from 'fs';
 import * as path from 'path';
 import copy from 'rollup-plugin-copy';
-import css from 'rollup-plugin-css-only';
+import postcss from 'rollup-plugin-postcss';
 
 //#region Definitions
 
-const BUILD = 'DEV';
-// const BUILD = 'CHROME';
+// const BUILD = 'DEV';
+const BUILD = 'CHROME';
 const IS_PROD = BUILD !== 'DEV';
 const DST = 'dist/';
 const ASSETS = 'assets';
 const JS = 'js';
 const SHIM = path.resolve('tools/shim') + '/';
-const ENTRY_BG = 'background';
-const ENTRIES = [
+const PAGE_BG = 'background';
+const PAGES = [
   'edit',
-  ENTRY_BG,
+  'options',
+  PAGE_BG,
 ];
 
 //#endregion
@@ -66,7 +68,7 @@ const PLUGIN_TERSER = IS_PROD && terser({
     ecma: 8,
     passes: 2,
     reduce_funcs: false,
-    unsafe_arrows: true,
+    // unsafe_arrows: true, // TODO: only apply to our code as it breaks CodeMirror
   },
   output: {
     ascii_only: false,
@@ -74,39 +76,40 @@ const PLUGIN_TERSER = IS_PROD && terser({
     wrap_func_args: false,
   },
 });
-const PLUGIN_CSS = css();
+const PLUGIN_CSS = postcss({
+  extract: true,
+});
 
 //#endregion
 //#region Entry
 
-function makeEntry(entry, file, opts) {
-  const entryPrefix = entry ? entry + '-' : '';
-  const entryCss = entry ? entry + '.css' : undefined;
-  const entryFileName = `${entry || '[name]'}.js`;
+function makeEntry(pages, file, opts) {
   return deepmerge({
-    input: {
-      [entry || getFileName(file)]: file || `src/${entry}/index.js`,
-    },
+    input: pages
+      ? Object.fromEntries(pages.map(p => [p, getEntryName(p)]))
+      : {[getFileName(file)]: file},
     output: {
-      dir: DST + (entry ? ASSETS : JS),
+      dir: DST + (pages ? ASSETS : JS),
       sourcemap: IS_PROD ? '' : 'inline',
       generatedCode: 'es2015',
       externalLiveBindings: false,
       freeze: false,
-      intro: 'const ' +
-        Object.entries({JS, BUILD, ENTRY: entry})
-          .map(([k, v]) => v && `__${k} = '${v}'`).filter(Boolean).join(',') + ';',
-      assetFileNames: entryCss,
-      chunkFileNames: chunk => entryPrefix + getChunkName(chunk),
-      entryFileNames: entryFileName,
+      intro: chunk => 'const ' +
+        Object.entries({JS, BUILD, ENTRY: chunk.name})
+          .map(([k, v]) => v && `__${k} = '${v}'`)
+          .filter(Boolean)
+          .join(',') + ';',
+      assetFileNames: 'styles.css',
+      chunkFileNames: getChunkName,
+      entryFileNames: '[name].js',
     },
     plugins: [
       ...PLUGINS,
-      entry && copyAndWatch([`${entry}.html`], {
-        __ASSET_JS: entryFileName,
-        __ASSET_CSS: entryCss,
-      }),
-      entry && entry !== ENTRY_BG && PLUGIN_CSS,
+      ...pages?.map(p => copyAndWatch([p + '.html'], {
+        __ASSET_JS: p + '.js',
+        __ASSET_CSS: p + '.css',
+      })) || [],
+      pages && pages !== PAGE_BG && PLUGIN_CSS,
       PLUGIN_TERSER,
     ].filter(Boolean),
   }, opts || {});
@@ -141,19 +144,19 @@ function copyAndWatch(files, vars) {
     return new Buffer(str);
   };
   const targets = files.map(f => {
-    const [from, to = from] = f.split(/\s*->\s*/);
-    const isJS = to.endsWith('.js');
+    const [from, to] = f.split(/\s*->\s*/);
+    const isJS = from.endsWith('.js');
     const npm = from.startsWith('npm:') && from.replace('npm:', 'node_modules/');
     if (npm && isJS) npms[path.basename(npm)] = npm;
     return {
       src: npm || `src/${from}`,
       dest: DST + (
         isJS ? JS :
-          /\b(css|images)\b/.test(to) ? ASSETS :
+          /\b(css|images)\b/.test(from) ? ASSETS :
             ''
       ),
       rename: to,
-      transform: (isJS || vars && /\.(js(on)?|css|html)$/.test(to)) &&
+      transform: (isJS || vars && /\.(js(on)?|css|html)$/.test(from)) &&
         transform,
     };
   });
@@ -168,6 +171,10 @@ function getChunkName(chunk) {
   return path.basename(chunk.facadeModuleId || '') || 'chunk.js';
 }
 
+function getEntryName(inputs) {
+  return `src/${inputs}/index.js`;
+}
+
 function getFileName(file) {
   return path.parse(file).name;
 }
@@ -178,17 +185,29 @@ function getFileName(file) {
 // fse.emptyDir(DST);
 
 export default [
-  ...ENTRIES.map(e => makeEntry(e)),
-  makeEntryIIFE('/background/background-worker.js'),
-  makeEntryIIFE('/edit/editor-worker.js'),
-  makeEntryIIFE('/js/color/color-converter.js', 'colorConverter'),
-  makeEntryIIFE('/js/csslint/csslint.js', 'CSSLint', {
-    external: './parserlib',
-    output: {globals: id => id.match(/parserlib/)?.[0] || id},
-  }),
-  makeEntryIIFE('/js/csslint/parserlib.js', 'parserlib'),
-  makeEntryIIFE('/js/meta-parser.js', 'metaParser'),
-  makeEntryIIFE('/js/moz-parser.js', 'extractSections'),
+  {
+    output: {
+      dir: DST,
+      experimentalMinChunkSize: 10e3,
+    },
+    plugins: [
+      ...PLUGINS,
+      html({
+        input: PAGES.map(p => `src/${p}.html`),
+      }),
+    ],
+  },
+  // makeEntry(PAGES),
+  // makeEntryIIFE('/background/background-worker.js'),
+  // makeEntryIIFE('/edit/editor-worker.js'),
+  // makeEntryIIFE('/js/color/color-converter.js', 'colorConverter'),
+  // makeEntryIIFE('/js/csslint/csslint.js', 'CSSLint', {
+  //   external: './parserlib',
+  //   output: {globals: id => id.match(/parserlib/)?.[0] || id},
+  // }),
+  // makeEntryIIFE('/js/csslint/parserlib.js', 'parserlib'),
+  // makeEntryIIFE('/js/meta-parser.js', 'metaParser'),
+  // makeEntryIIFE('/js/moz-parser.js', 'extractSections'),
 ];
 
 //#endregion

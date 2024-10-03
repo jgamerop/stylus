@@ -5,18 +5,8 @@ import {API} from '/js/msg';
 import popupGetStyles, {ABOUT_BLANK} from '/js/popup-get-styles';
 import * as prefs from '/js/prefs';
 import {
-  capitalize,
-  CHROME,
-  CHROME_POPUP_BORDER_BUG,
-  clamp,
-  clipString,
-  FIREFOX,
-  getActiveTab,
-  isEmptyObj, MF,
-  stringAsRegExpStr,
-  UA,
-  UCD,
-  URLS,
+  capitalize, CHROME, CHROME_POPUP_BORDER_BUG, clamp, clipString, FIREFOX, getActiveTab, isEmptyObj,
+  MF, stringAsRegExpStr, UA, UCD, URLS,
 } from '/js/toolbox';
 import Events from './events';
 

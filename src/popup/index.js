@@ -8,7 +8,7 @@ import {
   capitalize, CHROME, CHROME_POPUP_BORDER_BUG, clamp, clipString, FIREFOX, getActiveTab, isEmptyObj,
   MF, stringAsRegExpStr, UA, UCD, URLS,
 } from '/js/toolbox';
-import Events from './events';
+import * as Events from './events';
 import './hotkeys';
 import './popup.css';
 

@@ -1,5 +1,4 @@
-import messageBox from '/js/dlg/message-box';
-import {$, $$, $create, animateElement, scrollElementIntoView} from '/js/dom';
+import {$, $$, $create, animateElement, messageBox, scrollElementIntoView} from '/js/dom';
 import {t} from '/js/localization';
 import {API} from '/js/msg';
 import * as prefs from '/js/prefs';

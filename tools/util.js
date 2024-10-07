@@ -31,6 +31,13 @@ function defineVars(vars) {
   return new webpack.DefinePlugin(env);
 }
 
+function listCodeMirrorThemes() {
+  return fs.readdirSync('node_modules/codemirror/theme')
+    .sort()
+    .map(f => f.match(/([^/\\.]+)\.css$/i)?.[1])
+    .filter(Boolean);
+}
+
 function stripSourceMap(isDev, buf, from) {
   const str = buf.toString();
   const map = from + '.map';
@@ -67,6 +74,7 @@ module.exports = {
   addReport,
   anyPathSep,
   defineVars,
+  listCodeMirrorThemes,
   stripSourceMap,
   transpileCss,
   SKIP: [

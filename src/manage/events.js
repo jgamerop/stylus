@@ -1,13 +1,13 @@
-import messageBox from '/js/dlg/message-box';
-import {filterAndAppend, showFiltersStats} from '/js/filters';
+import {messageBox} from '/js/dom';
 /* global sorter */
 import {t} from '/js/localization';
-import {installed, newUI} from '/js/manage';
 import {API} from '/js/msg';
+import {browserWindows, debounce, getOwnTab, sessionStore, UCD} from '/js/toolbox';
+import {filterAndAppend, showFiltersStats} from './filters';
+import {installed, newUI} from '.';
 import {
   createStyleElement, createTargetsElement, getFaviconSrc, styleToDummyEntry, updateTotal,
-} from '/js/render';
-import {browserWindows, debounce, getOwnTab, sessionStore, UCD} from '/js/toolbox';
+} from './render';
 import {checkUpdate, handleUpdateInstalled} from './updater-ui';
 /* global
   $
@@ -42,8 +42,7 @@ const Events = {
   },
 
   async config(event, {styleMeta}) {
-    await import('/js/dlg/config-dialog'); /* global configDialog */
-    configDialog(styleMeta);
+    (await import('/js/dlg')).configDialog(styleMeta);
   },
 
   async delete(event, entry) {

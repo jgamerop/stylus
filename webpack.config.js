@@ -9,7 +9,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const {anyPathSep, defineVars, stripSourceMap} = require('./tools/util');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const {anyPathSep, defineVars, stripSourceMap, listCodeMirrorThemes} = require('./tools/util');
 
 const BUILD = process.env.NODE_ENV;
 const DEV = BUILD === 'DEV';
@@ -21,6 +22,7 @@ const SHIM = path.resolve('tools/shim') + '/';
 const PAGE_BG = 'background';
 const PAGES = [
   'edit',
+  'install-usercss',
   'options',
   'popup',
   PAGE_BG,
@@ -71,7 +73,7 @@ const CFG = {
           },
         },
       }),
-      new CssMinimizerPlugin(),
+      // new CssMinimizerPlugin(),
     ],
   },
   module: {
@@ -118,6 +120,9 @@ const CFG = {
     }),
     // new WebpackPatchBootstrapPlugin(),
   ],
+  stats: {
+    optimizationBailout: true,
+  },
 };
 
 function mergeCfg(ovr, base) {
@@ -180,8 +185,8 @@ function makeContentScript(entry) {
 // fse.emptyDirSync(DST);
 
 module.exports = [
-  ...PAGES.map(p => mergeCfg({
-    entry: {[p]: `/${p}/index.js`},
+  mergeCfg({
+    entry: Object.fromEntries(PAGES.map(p => [p, `/${p}/index`])),
     output: {
       filename: ASSETS + '[name].js',
       chunkFilename: ASSETS + '[name].js',
@@ -194,22 +199,23 @@ module.exports = [
             test: /codemirror([/\\]|-(?!factory)).+\.js$/,
             name: 'codemirror',
           },
-          // ...Object.fromEntries([
-          //   [3, 'commonBase', `^${SRC}js/(browser|msg|toolbox)`],
-          //   [2, 'commonUI', `^${SRC}(content/|js/(dlg/|dom|localization|themer))`],
-          //   [1, 'common', `^${SRC}js/|/lz-string(-unsafe)?/`],
-          // ].map(([priority, name, test]) => [name, {
-          //   chunks: 'all',
-          //   test: new RegExp(String.raw`(${anyPathSep(test)})[^./\\]*\.js$`),
-          //   usedExports: false,
-          //   name,
-          //   priority,
-          // }])),
+          ...Object.fromEntries([
+            [2, 'common-ui2', `^${SRC}js/(color|dlg)/`],
+            [2, 'common-ui', `^${SRC}(content/|js/(dom|localization|themer))`],
+            [1, 'common', `^${SRC}js/|/lz-string(-unsafe)?/`],
+          ].map(([priority, name, test]) => [name, {
+            test: new RegExp(String.raw`(${anyPathSep(test)})[^./\\]*\.js$`),
+            name,
+            priority,
+          }])),
         },
       },
     },
     plugins: [
-      defineVars({PAGE: p}),
+      defineVars({
+        PAGE: true,
+        CODEMIRROR_THEMES: listCodeMirrorThemes(),
+      }),
       new MiniCssExtractPlugin({
         filename: ASSETS + '[name].css',
         chunkFilename: ASSETS + '[name].css',
@@ -221,24 +227,30 @@ module.exports = [
         //   return ASSETS + c.runtime + '-' + files.map(f => path.basename(f, ext)).join('-') + ext;
         // },
       }),
-      new HtmlWebpackPlugin({
+      ...PAGES.map(p => new HtmlWebpackPlugin({
+        chunks: [p],
         filename: p + '.html',
         template: SRC + p + '.html',
-        inject: false,
         scriptLoading: 'defer',
+        inject: false,
+      })),
+      new BundleAnalyzerPlugin({
+        analyzerMode: 'static',
+        openAnalyzer: false,
+        reportFilename: DST + '.report.html',
       }),
     ],
-  })),
-  makeLibrary('/content/apply.js'),
-  makeLibrary([
-    '/background/background-worker.js',
-    '/edit/editor-worker.js',
-  ]),
-  makeLibrary('/js/color/color-converter.js', 'colorConverter'),
-  makeLibrary('/js/csslint/csslint.js', 'CSSLint',
-    {...LIB_EXPORT_DEFAULT, externals: {'./parserlib': 'parserlib'}}),
-  makeLibrary('/js/csslint/parserlib.js', 'parserlib', LIB_EXPORT_DEFAULT),
-  makeLibrary('/js/meta-parser.js', 'metaParser', LIB_EXPORT_DEFAULT),
-  makeLibrary('/js/moz-parser.js', 'extractSections', LIB_EXPORT_DEFAULT),
-  makeLibrary('/js/usercss-compiler.js', 'compileUsercss', LIB_EXPORT_DEFAULT),
+  }),
+  // makeLibrary('/content/apply.js'),
+  // makeLibrary([
+  //   '/background/background-worker.js',
+  //   '/edit/editor-worker.js',
+  // ]),
+  // makeLibrary('/js/color/color-converter.js', 'colorConverter'),
+  // makeLibrary('/js/csslint/csslint.js', 'CSSLint',
+  //   {...LIB_EXPORT_DEFAULT, externals: {'./parserlib': 'parserlib'}}),
+  // makeLibrary('/js/csslint/parserlib.js', 'parserlib', LIB_EXPORT_DEFAULT),
+  // makeLibrary('/js/meta-parser.js', 'metaParser', LIB_EXPORT_DEFAULT),
+  // makeLibrary('/js/moz-parser.js', 'extractSections', LIB_EXPORT_DEFAULT),
+  // makeLibrary('/js/usercss-compiler.js', 'compileUsercss', LIB_EXPORT_DEFAULT),
 ];

@@ -117,38 +117,6 @@ if (!('size' in URLSearchParams.prototype)) {
   });
 }
 
-const resourcePromises = {};
-
-export async function require(urls, cb) {
-  const promises = [];
-  const all = [];
-  const toLoad = [];
-  for (let url of Array.isArray(urls) ? urls : [urls]) {
-    const isCss = url.endsWith('.css');
-    const tag = isCss ? 'link' : 'script';
-    const attr = isCss ? 'href' : 'src';
-    if (!isCss && !url.endsWith('.js')) url += '.js';
-    if (url[0] === '/' && location.pathname.indexOf('/', 1) < 0) url = url.slice(1);
-    let el = document.head.querySelector(`${tag}[${attr}$="${url}"]`);
-    if (!el) {
-      el = document.createElement(tag);
-      toLoad.push(el);
-      resourcePromises[url] = new Promise((resolve, reject) => {
-        el.onload = resolve;
-        el.onerror = reject;
-        el[attr] = url;
-        if (isCss) el.rel = 'stylesheet';
-      }).catch(console.warn);
-    }
-    promises.push(resourcePromises[url]);
-    all.push(el);
-  }
-  if (toLoad.length) document.head.append(...toLoad);
-  if (promises.length) await Promise.all(promises);
-  if (cb) cb(...all);
-  return all[0];
-}
-
 export function isEmptyObj(obj) {
   if (obj) {
     for (const k in obj) {

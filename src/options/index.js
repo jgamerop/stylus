@@ -1,6 +1,5 @@
 import browser from '/js/browser';
-import messageBox from '/js/dlg/message-box';
-import {$, $$, $create, getEventKeyName, setInputValue, setupLivePrefs} from '/js/dom';
+import {$, $$, $create, getEventKeyName, messageBox, setInputValue, setupLivePrefs} from '/js/dom';
 import {t} from '/js/localization';
 import {API} from '/js/msg';
 import * as prefs from '/js/prefs';

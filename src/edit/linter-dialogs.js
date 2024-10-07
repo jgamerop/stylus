@@ -1,5 +1,4 @@
-import messageBox from '/js/dlg/message-box';
-import {$, $create, $createLink} from '/js/dom';
+import {$, $create, $createLink, messageBox} from '/js/dom';
 import {t} from '/js/localization';
 import {chromeSync} from '/js/storage-util';
 import {tryJSONparse} from '/js/toolbox';

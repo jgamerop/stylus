@@ -1,7 +1,12 @@
 import {$, $$, $create, focusA11y, toggleDataset} from './dom-base';
 import * as prefs from './prefs';
-import {require} from '/js/toolbox';
 import '/css/spinner.css';
+
+export let messageBox = new Proxy({}, {
+  get: (_, key) => async (...args) => (
+    messageBox = (await import('/js/dlg')).messageBox
+  )[key](...args),
+});
 
 /**
  * @param {HTMLElement} el

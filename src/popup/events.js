@@ -3,6 +3,7 @@ import {t} from '/js/localization';
 import {API} from '/js/msg';
 import {getActiveTab} from '/js/toolbox';
 import {resortEntries, tabURL} from '.';
+import * as hotkeys from './hotkeys';
 
 const menu = $('#menu');
 const menuExclusions = [];
@@ -10,9 +11,8 @@ const Events = {
   configure(event, entry) {
     if (!this.target) {
       const styleP = API.styles.get(entry.styleId);
-      return import('./hotkeys').then(hotkeys =>
-        hotkeys.pause(async () =>
-          (await import('/js/dlg/config-dialog')).default(await styleP)));
+      hotkeys.pause(async () =>
+        (await import('/js/dlg/config-dialog')).default(await styleP));
     } else {
       Events.openURLandHide.call(this, event);
     }

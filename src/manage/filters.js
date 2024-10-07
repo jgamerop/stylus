@@ -5,7 +5,7 @@ import {API} from '/js/msg';
 import * as prefs from '/js/prefs';
 import router from '/js/router';
 import {debounce} from '/js/toolbox';
-import {installed} from './manage';
+import {installed} from './index';
 import {fitNameColumn, fitSizeColumn} from './render';
 
 const filtersSelector = {

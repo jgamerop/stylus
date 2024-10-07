@@ -17,7 +17,10 @@ let isStylelint;
 let linter;
 let popup;
 
-export async function showLintConfig() {
+$('#lint-help').onclick = showLintHelp;
+$('#linter-settings', t.template.EditorSettings).onclick = showLintConfig;
+
+async function showLintConfig() {
   linter = await getLinter();
   if (!linter) {
     return;
@@ -97,7 +100,7 @@ export async function showLintConfig() {
   popup.onClose.add(onConfigClose);
 }
 
-export async function showLintHelp() {
+async function showLintHelp() {
   const linter = await getLinter();
   const baseUrl = linter === 'stylelint'
     ? 'https://stylelint.io/user-guide/rules/'

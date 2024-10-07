@@ -27,6 +27,7 @@ export const [CHROME, FIREFOX, UA] = (() => {
 
 // see PR #781
 export const CHROME_POPUP_BORDER_BUG = CHROME >= 62 && CHROME <= 74;
+export const browserWindows = browser.windows;
 
 export const capitalize = s => s.slice(0, 1).toUpperCase() + s.slice(1);
 export const clamp = (value, min, max) => value < min ? min : value > max ? max : value;
@@ -37,7 +38,8 @@ export const getOwnTab = () => browser.tabs.getCurrent();
 export const getActiveTab = async () =>
   (await browser.tabs.query({currentWindow: true, active: true}))[0] ||
   // workaround for Chrome bug when devtools for our popup is focused
-  (await browser.tabs.query({windowId: (await browser.windows.getCurrent()).id, active: true}))[0];
+  browserWindows &&
+  (await browser.tabs.query({windowId: (await browserWindows.getCurrent()).id, active: true}))[0];
 export const hasOwn = Object.call.bind({}.hasOwnProperty);
 export const ignoreChromeError = () => chrome.runtime.lastError;
 export const stringAsRegExpStr = s => s.replace(/[{}()[\]\\.+*?^$|]/g, '\\$&');

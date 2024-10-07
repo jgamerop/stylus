@@ -7,7 +7,7 @@ import {API} from '/js/msg';
 import {
   createStyleElement, createTargetsElement, getFaviconSrc, styleToDummyEntry, updateTotal,
 } from '/js/render';
-import {debounce, getOwnTab, sessionStore, UCD} from '/js/toolbox';
+import {browserWindows, debounce, getOwnTab, sessionStore, UCD} from '/js/toolbox';
 import {checkUpdate, handleUpdateInstalled} from './updater-ui';
 /* global
   $
@@ -74,7 +74,7 @@ const Events = {
     if (key === 'MouseL') {
       sessionStore['manageStylesHistory' + ownTab.id] = url;
       location.href = url;
-    } else if (chrome.windows && key === 'Shift-MouseL') {
+    } else if (browserWindows && key === 'Shift-MouseL') {
       API.openEditor({id: entry.styleId});
     } else {
       API.openURL({

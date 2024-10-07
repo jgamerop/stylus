@@ -1,11 +1,13 @@
-import {$, $$, $create, messageBox, scrollElementIntoView} from '/js/dom';
-import {$entry} from '/js/render';
-import {API} from '/js/msg';
-import {filterAndAppend, filtersSelector} from '/js/filters';
-import {newUI} from '/js/manage';
-import * as prefs from '/js/prefs';
+import messageBox from '/js/dlg/message-box';
+import {$, $$, $create, scrollElementIntoView} from '/js/dom';
 /* global sorter */
 import {t} from '/js/localization';
+import {API} from '/js/msg';
+import * as prefs from '/js/prefs';
+import {chromeLocal} from '/js/storage-util';
+import {newUI} from '.';
+import {filterAndAppend, filtersSelector} from './filters';
+import {$entry} from './render';
 
 const btnCheck = $('#check-all-updates');
 const btnCheckForce = $('#check-all-updates-force');
@@ -222,7 +224,6 @@ export default async function showUpdateHistory(show, el, selector) {
   const log = $create(selector);
   let scroller, toggler;
   let deleted = false;
-  await require(['/js/storage-util']); /* global chromeLocal */
   const [lines = [], states] = await Promise.all([
     chromeLocal.getValue('updateLog'),
     API.updater.getStates(),

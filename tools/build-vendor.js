@@ -8,14 +8,12 @@ const path = require('path');
 
 const files = {
   'jsonlint': [
+    // TODO: migrate to a webpack loader
     {'lib/jsonlint.js': text =>
       text.replace('var jsonlint = (function(){', '')
         .split('return parser;', 1)[0] + 'export default parser;',
     },
     'README.md -> LICENSE',
-  ],
-  '@eight04/draggable-list': [
-    'dist/draggable-list.iife.js',
   ],
 };
 

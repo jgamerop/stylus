@@ -1,6 +1,7 @@
 import {$, $$, $create, focusA11y, toggleDataset} from './dom-base';
 import * as prefs from './prefs';
 import {require} from '/js/toolbox';
+import '/css/spinner.css';
 
 /**
  * @param {HTMLElement} el
@@ -165,8 +166,7 @@ export function setupLivePrefs(ids) {
 }
 
 /** @param {string|Node} parent - selector or DOM node */
-export async function showSpinner(parent) {
-  await import('/css/spinner.css');
+export function showSpinner(parent) {
   parent = parent instanceof Node ? parent : $(parent);
   return parent.appendChild($create('.lds-spinner',
     new Array(12).fill($create('div')).map(e => e.cloneNode())));

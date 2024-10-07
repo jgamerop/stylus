@@ -119,7 +119,7 @@ styleReady.then(() => {
   function timerOn() {
     if (!spinnerTimer) {
       elProgress.textContent = '';
-      spinnerTimer = setTimeout(async () => (spinner = await showSpinner(elProgress)), 250);
+      spinnerTimer = setTimeout(() => (spinner = showSpinner(elProgress)), 250);
     }
   }
 

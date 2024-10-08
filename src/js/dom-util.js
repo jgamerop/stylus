@@ -2,9 +2,13 @@ import {$, $$, $create, focusA11y, toggleDataset} from './dom-base';
 import * as prefs from './prefs';
 import '/css/spinner.css';
 
+export let configDialog = async (...args) => (
+  configDialog = (await import('/js/dlg/config-dialog')).default
+)(...args);
+
 export let messageBox = new Proxy({}, {
   get: (_, key) => async (...args) => (
-    messageBox = (await import('/js/dlg')).messageBox
+    messageBox = (await import('/js/dlg/message-box')).default
   )[key](...args),
 });
 

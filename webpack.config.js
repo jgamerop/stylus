@@ -45,8 +45,7 @@ const CFG = {
       '/': SRC,
     },
     fallback: {
-      './fs-drive': SHIM + 'empty.js',
-      'fs': SHIM + 'empty.js',
+      'fs': SHIM + 'null.js',
       'path': SHIM + 'path.js',
       'url': SHIM + 'url.js',
     },
@@ -91,6 +90,10 @@ const CFG = {
         use: {loader: 'babel-loader'},
         resolve: {fullySpecified: false},
       },
+      {
+        test: require.resolve('db-to-cloud/lib/drive/fs-drive'),
+        use: [{loader: SHIM + 'null-loader.js'}],
+      },
     ],
   },
   node: false,
@@ -114,7 +117,8 @@ const CFG = {
         ].map(([npm, to]) => ({
           from: require.resolve(npm),
           to: DST + JS + to,
-          transform: stripSourceMap.bind(null, DEV),
+          info: {minimized: true},
+          transform: stripSourceMap,
         })),
       ],
     }),
@@ -200,7 +204,6 @@ module.exports = [
             name: 'codemirror',
           },
           ...Object.fromEntries([
-            [2, 'common-ui2', `^${SRC}js/(color|dlg)/`],
             [2, 'common-ui', `^${SRC}(content/|js/(dom|localization|themer))`],
             [1, 'common', `^${SRC}js/|/lz-string(-unsafe)?/`],
           ].map(([priority, name, test]) => [name, {
@@ -240,6 +243,12 @@ module.exports = [
         reportFilename: DST + '.report.html',
       }),
     ],
+    resolve: {
+      modules: [
+        SHIM,
+        'node_modules',
+      ],
+    },
   }),
   // makeLibrary('/content/apply.js'),
   // makeLibrary([

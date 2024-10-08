@@ -1,8 +1,9 @@
 import {CodeMirror} from '/edit/codemirror-default';
 import CODEMIRROR_THEMES from '/edit/codemirror-themes';
 import compareVersion from '/js/cmpver';
-import {configDialog, messageBox} from '/js/dlg';
-import {$, $$, $$remove, $create, $createLink, showSpinner} from '/js/dom';
+import {
+  $, $$, $$remove, $create, $createLink, configDialog, messageBox, showSpinner,
+} from '/js/dom';
 import {t} from '/js/localization';
 import {API} from '/js/msg';
 import * as prefs from '/js/prefs';

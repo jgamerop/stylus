@@ -1,4 +1,4 @@
-import {$, $$, $remove, getEventKeyName, moveFocus} from '/js/dom';
+import {$, $$, $remove, configDialog, getEventKeyName, moveFocus} from '/js/dom';
 import {t} from '/js/localization';
 import {API} from '/js/msg';
 import {getActiveTab} from '/js/toolbox';
@@ -10,8 +10,7 @@ const menuExclusions = [];
 
 export function configure(event, entry) {
   if (!this.target) {
-    const styleP = API.styles.get(entry.styleId);
-    hotkeys.pause(async () => (await import('/js/dlg')).configDialog(await styleP));
+    hotkeys.pause(async () => configDialog(await API.styles.get(entry.styleId)));
   } else {
     openURLandHide.call(this, event);
   }

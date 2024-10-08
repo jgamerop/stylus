@@ -4,13 +4,14 @@ import {clamp} from '/js/toolbox';
 import './message-box.css';
 
 // TODO: convert this singleton mess so we can show many boxes at once
-export const messageBox = {
+const messageBox = {
   element: null,
   listeners: null,
   _blockScroll: null,
   _originalFocus: null,
   _resolve: null,
 };
+export default messageBox;
 
 messageBox.close = async isAnimated => {
   window.off('keydown', messageBox.listeners.key, true);

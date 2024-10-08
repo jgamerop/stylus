@@ -1,4 +1,4 @@
-import {messageBox} from '/js/dom';
+import {configDialog, messageBox} from '/js/dom';
 /* global sorter */
 import {t} from '/js/localization';
 import {API} from '/js/msg';
@@ -41,8 +41,8 @@ const Events = {
     checkUpdate(entry, {single: true});
   },
 
-  async config(event, {styleMeta}) {
-    (await import('/js/dlg')).configDialog(styleMeta);
+  config(event, {styleMeta}) {
+    configDialog(styleMeta);
   },
 
   async delete(event, entry) {

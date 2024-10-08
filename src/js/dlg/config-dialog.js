@@ -1,15 +1,13 @@
 import ColorPicker from '/js/color/color-picker';
-import {$, $create, $createLink, $remove, important, setupLivePrefs} from '/js/dom';
+import {$, $create, $createLink, $remove, important, messageBox, setupLivePrefs} from '/js/dom';
 import {t} from '/js/localization';
 import {API} from '/js/msg';
 import * as prefs from '/js/prefs';
 import {clamp, debounce, deepCopy, UA, UCD} from '/js/toolbox';
-import '/js/color/color-converter';
-import {messageBox} from './message-box';
 import './config-dialog.css';
 import '/options/onoffswitch.css';
 
-export function configDialog(style) {
+export default function configDialog(style) {
   const AUTOSAVE_DELAY = 400;
   let saving = false;
   let bodyStyle;

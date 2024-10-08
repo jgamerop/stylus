@@ -24,6 +24,7 @@ async function showLintConfig() {
   if (!linter) {
     return;
   }
+  // TODO: replace with JSON.parse()
   await import('/js/jsonlint-bundle');
   const config = await chromeSync.getLZValue(chromeSync.LZ_KEY[linter]);
   const title = t('linterConfigPopupTitle', isStylelint ? 'Stylelint' : 'CSSLint');

@@ -195,7 +195,7 @@ function hint(cm) {
     while (prevWord && !ruleIds.includes(prevWord)) {
       prevWord = (search.find(true) || [])[1];
     }
-    words = (options[prevWord] || []).slice(-1)[0] || ruleIds;
+    words = options[prevWord]?.slice(-1)[0] || ruleIds;
   }
   return {
     list: words.filter(word => word.startsWith(leftPart)),

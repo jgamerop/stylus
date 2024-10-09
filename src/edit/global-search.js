@@ -436,7 +436,7 @@ function setupOverlay(queue, debounced) {
     const cmState = getStateSafe(cm);
     const query = state.rx2;
 
-    if ((cmState.overlay || {}).query === query) {
+    if (cmState.overlay?.query === query) {
       if (cmState.unclosedOp && cm.curOp) cm.endOperation();
       cmState.unclosedOp = false;
       continue;
@@ -782,8 +782,8 @@ function showTally(num, numApplies) {
     for (const cm of state.editors) {
       const {annotate, overlay} = getStateSafe(cm);
       num +=
-        ((annotate || {}).matches || []).length ||
-        (overlay || {}).numFound ||
+        annotate?.matches?.length ||
+        overlay?.numFound ||
         0;
     }
     state.numFound = num;

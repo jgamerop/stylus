@@ -695,7 +695,7 @@ function getStateSafe(cm) {
 function getContinuationPos({cm, reverse}) {
   const cmSearchState = getStateSafe(cm);
   const posType = reverse ? 'from' : 'to';
-  const searchPos = (cmSearchState.searchPos || {})[posType];
+  const searchPos = cmSearchState.searchPos?.[posType];
   const cursorPos = cm.getCursor(posType);
   const preferCursor = !searchPos ||
     CodeMirror.cmpPos(cursorPos, cmSearchState.cursorPos[posType]);

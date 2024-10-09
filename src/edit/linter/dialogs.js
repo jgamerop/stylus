@@ -186,7 +186,7 @@ function hint(cm) {
     words = ruleIds;
   } else if (depth === 2 || depth === 3 && lexical.type === ']') {
     words = !quoted ? ['true', 'false', 'null'] :
-      ruleIds.includes(prevWord) && (options[prevWord] || [])[0] || [];
+      ruleIds.includes(prevWord) && options[prevWord]?.[0] || [];
   } else if (depth === 4 && prevWord === 'severity') {
     words = ['error', 'warning'];
   } else if (depth === 4) {

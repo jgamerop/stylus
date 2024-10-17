@@ -58,8 +58,8 @@ function stripSourceMap(buf, from) {
 }
 
 module.exports = {
-  MANIFEST: MANIFEST,
-  MANIFEST_MV3: MANIFEST_MV3,
+  MANIFEST,
+  MANIFEST_MV3,
   ROOT,
   SRC,
   addReport,

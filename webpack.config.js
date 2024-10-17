@@ -312,16 +312,10 @@ module.exports = [
     ].filter(Boolean),
     resolve: RESOLVE_VIA_SHIM,
   }),
-  mergeCfg({
+  MV3 && mergeCfg({
     entry: `/${PAGE_BG}`,
-    output: {
-      library: {
-        type: 'module',
-      },
-    },
-    experiments: {
-      outputModule: true,
-    },
+    output: {library: {type: 'module'}},
+    experiments: {outputModule: true},
     plugins: [
       defineVars({PAGE: 'sw'}),
       new webpack.BannerPlugin({raw: true, banner: '"use strict";'}),
@@ -340,4 +334,4 @@ module.exports = [
   makeLibrary('/js/meta-parser.js', 'metaParser', LIB_EXPORT_DEFAULT),
   makeLibrary('/js/moz-parser.js', 'extractSections', LIB_EXPORT_DEFAULT),
   makeLibrary('/js/usercss-compiler.js', 'compileUsercss', LIB_EXPORT_DEFAULT),
-];
+].filter(Boolean);

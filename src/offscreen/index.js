@@ -9,7 +9,7 @@ const COMMANDS = {
   isDark: () => matchMedia('(prefers-color-scheme:dark)').matches,
   /** @this {MessageEvent} */
   worker(url) {
-    (workers[url] || (workers[url] = new Worker('/js/worker-util.js?url=' + url)))
+    (workers[url] || (workers[url] = new Worker('/js/worker-util.js?url=' + url))) // FIXME
       .postMessage(null, [this.ports[0]]);
   },
 };
@@ -21,7 +21,6 @@ navigator.serviceWorker.onmessage = evt => {
   bgPort.onmessage = bgPortOnMessage;
   chrome.runtime.connect({name: evt.data[1]});
 };
-navigator.serviceWorker.startMessages();
 
 /** @param {MessageEvent} evt */
 async function bgPortOnMessage(evt) {

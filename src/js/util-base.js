@@ -119,3 +119,15 @@ export function deepEqual(a, b, ignoredKeys) {
 export async function fetchText(url, opts) {
   return (await fetch(url, opts)).text();
 }
+
+/** @this {Object} DriveOptions */
+export function fetchWebDAV(url, init = {}) {
+  return fetch(url, {
+    ...init,
+    credentials: 'omit', // circumventing nextcloud CSRF token error
+    headers: {
+      ...init.headers,
+      Authorization: `Basic ${btoa(`${this.username || ''}:${this.password || ''}`)}`,
+    },
+  });
+}

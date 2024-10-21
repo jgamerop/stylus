@@ -25,11 +25,10 @@ function anyPathSep(str) {
   return str.replace(/[\\/]/g, /[\\/]/.source);
 }
 
-function defineVars(vars) {
+function defineVars(vars, raws = {}) {
   const env = {};
-  for (const k in vars) {
-    env['process.env.' + k] = JSON.stringify(vars[k]);
-  }
+  for (const k in vars) env['process.env.' + k] = JSON.stringify(vars[k]);
+  for (const k in raws) env['process.env.' + k] = raws[k];
   return new webpack.DefinePlugin(env);
 }
 

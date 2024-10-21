@@ -26,7 +26,7 @@ import * as usercssMan from './usercss-manager';
 import * as usoApi from './uso-api';
 import * as uswApi from './usw-api';
 
-Object.assign(API, /** @namespace API */ {
+Object.assign(API, {
 
   //#region API data/db/info
 

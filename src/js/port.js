@@ -1,12 +1,4 @@
 export const PORT_TIMEOUT = 5 * 60e3; // TODO: expose as a configurable option
-const ERROR_PROPS_TO_CLONE = [
-  'name',
-  'stack',
-  'message',
-  'lineNumber',
-  'columnNumber',
-  'fileName',
-];
 const ret0 = () => 0;
 let timer;
 let lockingSelf;
@@ -15,7 +7,9 @@ export function createPortProxy(getTarget, lockName) {
   let exec;
   const init = (...args) => (exec ??= createPortExec(getTarget, lockName))(...args);
   return new Proxy({}, {
-    get: (_, cmd) => (exec || init)?.bind(null, cmd),
+    get: (_, cmd) => function (...args) {
+      return (exec || init).call(this, cmd, ...args);
+    },
   });
 }
 
@@ -113,9 +107,9 @@ export function initRemotePort(evt, exec, autoClose) {
       if (res instanceof Promise) res = await res;
     } catch (e) {
       res = undefined; // clearing a rejected Promise
-      err = {};
-      for (const p of ERROR_PROPS_TO_CLONE) err[p] = e[p];
-      Object.assign(err, e);
+      err = e;
+      delete e.source;
+      // TODO: find which props are actually used (err may contain noncloneable Response)
     }
     port.postMessage({id, res, err}, (/**@type{RemotePortEvent}*/portEvent)._transfer);
     if (!--numJobs && autoClose) closeAfterDelay();

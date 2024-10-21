@@ -9,7 +9,8 @@ const TerserPlugin = require('terser-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer');
-const {defineVars, stripSourceMap, MANIFEST, MANIFEST_MV3, ROOT} = require('./tools/util');
+const {anyPathSep, defineVars, stripSourceMap, MANIFEST, MANIFEST_MV3, ROOT} =
+  require('./tools/util');
 const WebpackPatchBootstrapPlugin = require('./tools/webpack-patch-bootstrap');
 
 const [BUILD, FLAVOR] = process.env.NODE_ENV?.split('-') || [];
@@ -86,11 +87,6 @@ const CFG = {
         options: {root: ROOT},
         resolve: {fullySpecified: false},
       }, {
-        loader: SHIM + 'null-loader.js',
-        test: [
-          require.resolve('db-to-cloud/lib/drive/fs-drive'),
-        ],
-      }, {
         loader: SHIM + 'cjs-to-esm-loader.js',
         test: [
           'db-to-cloud',
@@ -157,6 +153,8 @@ const CFG = {
       JS,
       MV3,
       PAGE_BG,
+    }, {
+      API: 'global.API', // hiding `global` from IDE so it doesn't see `API` as a global
     }),
     new WebpackPatchBootstrapPlugin(),
   ],
@@ -255,23 +253,23 @@ module.exports = [
     optimization: {
       splitChunks: {
         chunks: 'all',
-        // cacheGroups: {
-        //   codemirror: {
-        //     test: new RegExp(String.raw`(${anyPathSep([
-        //       SRC + 'cm/',
-        //       String.raw`codemirror(/|-(?!factory))`,
-        //     ].join('|'))}).+\.js$`),
-        //     name: 'codemirror',
-        //   },
-        //   ...Object.fromEntries([
-        //     [2, 'common-ui', `^${SRC}(content/|js/(dom|localization|themer))`],
-        //     [1, 'common', `^${SRC}js/|/lz-string(-unsafe)?/`],
-        //   ].map(([priority, name, test]) => [name, {
-        //     test: new RegExp(String.raw`(${anyPathSep(test)})[^./\\]*\.js$`),
-        //     name,
-        //     priority,
-        //   }])),
-        // },
+        cacheGroups: {
+          codemirror: {
+            test: new RegExp(String.raw`(${anyPathSep([
+              SRC + 'cm/',
+              String.raw`codemirror(/|-(?!factory))`,
+            ].join('|'))}).+\.js$`),
+            name: 'codemirror',
+          },
+          ...Object.fromEntries([
+            [2, 'common-ui', `^${SRC}(content/|js/(dom|localization|themer))`],
+            [1, 'common', `^${SRC}js/|/lz-string(-unsafe)?/`],
+          ].map(([priority, name, test]) => [name, {
+            test: new RegExp(String.raw`(${anyPathSep(test)})[^./\\]*\.js$`),
+            name,
+            priority,
+          }])),
+        },
       },
     },
     plugins: [

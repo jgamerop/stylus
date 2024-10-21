@@ -1,6 +1,6 @@
 // WARNING: make sure toolbox.js runs first and sets deepCopy
 import * as msg from '/js/msg-base';
-import {API, apiPortDisconnect} from '/js/msg-base';
+import {API, apiPortDisconnect} from '/js/msg-api';
 import * as styleInjector from './style-injector';
 
 let isTab = process.env.PAGE || location.pathname !== '/popup.html';

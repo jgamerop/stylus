@@ -1,13 +1,16 @@
 import browser from '/js/browser';
+import {kGetAccessToken} from '/js/consts';
+import {API} from '/js/msg-api';
 import * as prefs from '/js/prefs';
 import {chromeLocal, chromeSync} from '/js/storage-util';
+import {fetchWebDAV, hasOwn} from '/js/util-base';
 import {broadcastExtension} from './broadcast';
 import {bgReady, uuidIndex} from './common';
 import db from './db';
+import {cloudDrive, dbToCloud} from './db-to-cloud-broker';
 import {overrideBadge} from './icon-manager';
 import * as styleMan from './style-manager';
 import {getToken, revokeToken} from './token-manager';
-import * as dbToCloud from 'db-to-cloud';
 
 //#region Init
 
@@ -99,11 +102,12 @@ export async function getDriveOptions(driveName) {
 
 export async function start(name, fromPref = false) {
   if (ready.then) await ready;
-  if (!ctrl) await initController();
-  else if (ctrl.then) await ctrl;
+  if ((ctrl ??= initController()).then) ctrl = await ctrl;
 
   if (currentDrive) return;
-  currentDrive = await getDrive(name);
+  if ((currentDrive = getDrive(name)).then) { // preventing re-entry by assigning synchronously
+    currentDrive = await currentDrive;
+  }
   ctrl.use(currentDrive);
 
   status.state = STATES.connecting;
@@ -176,8 +180,8 @@ export async function syncNow() {
 //#endregion
 //#region Utils
 
-async function initController() {
-  ctrl = await (ctrl = dbToCloud.dbToCloud({
+function initController() {
+  return dbToCloud({
     onGet: _id => styleMan.uuid2style(_id) || uuidIndex.custom[_id],
     async onPut(doc) {
       if (!doc) return; // TODO: delete it?
@@ -230,7 +234,7 @@ async function initController() {
     retryMaxAttempts: 10,
     retryExp: 1.2,
     retryDelay: 6,
-  }));
+  });
 }
 
 function emitStatusChange() {
@@ -269,22 +273,19 @@ function getErrorBadge() {
 }
 
 async function getDrive(name) {
-  if (name === 'dropbox' || name === 'google' || name === 'onedrive' || name === 'webdav') {
-    const options = await getDriveOptions(name);
-    options.getAccessToken = () => getToken(name);
-    options.fetch = name === 'webdav' ? fetchWebDAV.bind(options) : fetch;
-    return dbToCloud.drive[name].default(options);
+  if (!hasOwn(cloudDrive, name)) throw new Error(`Unknown cloud provider: ${name}`);
+  const options = await getDriveOptions(name);
+  const webdav = name === 'webdav';
+  const getAccessToken = () => getToken(name);
+  if (!process.env.MV3) {
+    options[kGetAccessToken] = getAccessToken;
+    options.fetch = webdav ? fetchWebDAV.bind(options) : fetch;
+  } else if (webdav) {
+    API.sync[kGetAccessToken] = getAccessToken;
+  } else {
+    options[kGetAccessToken] = getAccessToken;
   }
-  throw new Error(`unknown cloud name: ${name}`);
-}
-
-/** @this {Object} DriveOptions */
-function fetchWebDAV(url, init = {}) {
-  init.credentials = 'omit'; // circumventing nextcloud CSRF token error
-  init.headers = Object.assign({}, init.headers, {
-    Authorization: `Basic ${btoa(`${this.username || ''}:${this.password || ''}`)}`,
-  });
-  return fetch(url, init);
+  return cloudDrive[name](options);
 }
 
 function schedule(delay = SYNC_DELAY) {
@@ -299,7 +300,7 @@ function translateErrorMessage(err) {
     return browser.i18n.getMessage('syncErrorLock',
       new Date(err.expire).toLocaleString([], {timeStyle: 'short'}));
   }
-  return err.message || String(err);
+  return err.message || JSON.stringify(err);
 }
 
 //#endregion

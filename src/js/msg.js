@@ -3,6 +3,7 @@ import browser from './browser';
 import {apiHandler, apiSendProxy, isBg, unwrap} from './msg-base';
 import {createPortExec, createPortProxy} from './port';
 import {deepCopy, getOwnTab, URLS} from './toolbox';
+import {swPath} from './urls';
 
 export * from './msg-base';
 
@@ -12,7 +13,7 @@ const needsTab = [
 ];
 /** @type {MessagePort} */
 const swExec = process.env.MV3 &&
-  createPortExec(() => navigator.serviceWorker.controller, `/${process.env.PAGE_BG}.js`);
+  createPortExec(() => navigator.serviceWorker.controller, swPath);
 const workerApiPrefix = 'worker.';
 export let bg = isBg ? self : !process.env.MV3 && chrome.extension.getBackgroundPage();
 let bgWorkerProxy;

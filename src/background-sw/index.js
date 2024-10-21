@@ -1,5 +1,6 @@
 // WARNING! /background must be the first to set global.API
 import '/background';
+import {cloudDrive} from '/background/db-to-cloud-broker';
 import {API, _execute} from '/js/msg';
 import {createPortProxy, initRemotePort} from '/js/port';
 import {workerPath, ownRoot} from '/js/urls';
@@ -42,3 +43,10 @@ self.onfetch = evt => {
 }
 
 API.worker = createPortProxy(() => offscreen.getWorkerPort(workerPath), workerPath);
+
+cloudDrive.webdav = async cfg => {
+  const res = await offscreen.webdavInit(cfg);
+  const webdav = offscreen.webdav;
+  for (const k in res) res[k] ??= webdav.bind(null, k);
+  return res;
+};

@@ -9,7 +9,7 @@ export const clipString = (str, limit = 100) => str.length > limit
   ? str.substr(0, limit) + '...'
   : str;
 export const hasOwn = process.env.MV3
-  ? Object.hasOwn
+  ? /*@__PURE__*/Object.hasOwn
   : /*@__PURE__*/Object.call.bind({}.hasOwnProperty);
 /** FYI, matchMedia's onchange doesn't work in bg context, so we use it in our content script */
 export const isCssDarkScheme = () => matchMedia('(prefers-color-scheme:dark)').matches;

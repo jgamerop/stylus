@@ -6,13 +6,14 @@ let lastBusyTime = 0;
 let pulse;
 
 subscribe('keepAlive', checkPref, true);
+process.env.KEEP_ALIVE = keepAlive;
 
-export const keepAlive = process.env.KEEP_ALIVE = !process.env.MV3 ? v => v : v => {
+export function keepAlive(v) {
   if (!(v instanceof Promise)) lastBusyTime = performance.now();
   else if (!busy) checkBusyWhenSettled([v]);
   else busy.push(v);
   return v;
-};
+}
 
 function checkBusyWhenSettled(promises) {
   Promise.allSettled(busy = promises).then(checkBusy);

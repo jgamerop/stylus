@@ -1,5 +1,8 @@
 export const COMMANDS = process.env.ENTRY !== 'sw' && (
-  process.env.ENTRY === 'worker' || !process.env.MV3 ? {} : /** @namespace CommandsAPI */ {
+  process.env.ENTRY === 'worker' || !process.env.MV3 ? {
+    __proto__: null,
+  } : /** @namespace CommandsAPI */ {
+    __proto__: null,
     /** @this {RemotePortEvent} */
     getWorkerPort(url) {
       const p = new SharedWorker(url).port;
@@ -32,7 +35,6 @@ export function createPortProxy(getTarget, opts) {
 }
 
 export function createPortExec(getTarget, {lock, once} = {}) {
-  /** @type {Map<number, PromiseWithResolvers & {stack: string}>} */
   let queue;
   /** @type {MessagePort} */
   let port;
@@ -41,13 +43,13 @@ export function createPortExec(getTarget, {lock, once} = {}) {
   let lockRequested;
   let lastId = 0;
   return async function exec(...args) {
-    const pw = Promise.withResolvers();
-    pw.stack = new Error(); // saving it prior to a possible async jump for easier debugging
+    const ctx = [new Error().stack]; // saving it prior to a possible async jump for easier debugging
+    const promise = new Promise((resolve, reject) => ctx.push(resolve, reject));
     if ((port ??= initPort()).then) port = await port;
-    queue.set(++lastId, pw);
+    queue.set(++lastId, ctx);
     (once ? target : port).postMessage({args, id: lastId},
       once ? [port] : Array.isArray(this) ? this : undefined); // transferables
-    return pw.promise;
+    return promise;
   };
   async function initPort() {
     if (typeof getTarget === 'string') {
@@ -76,14 +78,14 @@ export function createPortExec(getTarget, {lock, once} = {}) {
   function onMessage({data}) {
     if (!lockRequested && !once) trackTarget(queue);
     const {id, res, err} = data.id ? data : JSON.parse(data);
-    const v = queue.get(id);
+    const [stack, resolve, reject] = queue.get(id);
     queue.delete(id);
     if (id === lastId) --lastId;
     if (!err) {
-      v.resolve(res);
+      resolve(res);
     } else {
-      if (v.stack) err.stack += '\n' + v.stack;
-      v.reject(err);
+      err.stack += '\n' + stack;
+      reject(err);
     }
     if (once) {
       port.close();
@@ -93,10 +95,10 @@ export function createPortExec(getTarget, {lock, once} = {}) {
   async function trackTarget(queueCopy) {
     lockRequested = true;
     await navigator.locks.request(lock, ret0);
-    for (const v of queueCopy.values()) {
+    for (const [stack, /*resolve*/, reject] of queueCopy.values()) {
       const err = new Error('Target disconnected');
-      err.stack = v.stack;
-      v.reject(err);
+      err.stack = stack;
+      reject(err);
     }
     if (queue === queueCopy) {
       port = queue = target = null;

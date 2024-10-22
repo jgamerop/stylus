@@ -56,12 +56,12 @@ import {capitalize} from '/js/toolbox';
   }
 
   async function updateButtons() {
-    const {state, STATES} = status;
+    const state = status.state;
+    const STATES = status.STATES;
     const isConnected = state === STATES.connected;
     const off = state === STATES.disconnected;
-    if (status.currentDriveName) {
-      elCloud.value = status.currentDriveName;
-    }
+    const drv = status.currentDriveName;
+    if (drv) elCloud.value = drv;
     elCloud.disabled = !off;
     elToggle.disabled = status.syncing;
     elToggle.textContent = t(`optionsSync${off ? 'Connect' : 'Disconnect'}`);

@@ -1,4 +1,4 @@
-import {subscribe} from '/src/js/prefs';
+import {subscribe} from '/js/prefs';
 
 /** @type {?Promise[]} */
 let busy;
@@ -7,10 +7,12 @@ let pulse;
 
 subscribe('keepAlive', checkPref, true);
 
-export function keepAliveWhileBusy(...promises) {
-  if (!busy) checkBusyWhenSettled(promises);
-  else busy.push(...promises);
-}
+export const keepAlive = process.env.KEEP_ALIVE = !process.env.MV3 ? v => v : v => {
+  if (!(v instanceof Promise)) lastBusyTime = performance.now();
+  else if (!busy) checkBusyWhenSettled([v]);
+  else busy.push(v);
+  return v;
+};
 
 function checkBusyWhenSettled(promises) {
   Promise.allSettled(busy = promises).then(checkBusy);

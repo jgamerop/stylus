@@ -1,10 +1,10 @@
 // WARNING! /background must be the first to set global.API
 import '/background';
 import {cloudDrive} from '/background/db-to-cloud-broker';
-import {API, _execute} from '/js/msg';
+import {_execute, API} from '/js/msg';
 import {createPortProxy, initRemotePort} from '/js/port';
-import {workerPath, ownRoot} from '/js/urls';
-import './keep-alive';
+import {ownRoot, workerPath} from '/js/urls';
+import {keepAlive} from './keep-alive';
 import offscreen from './offscreen';
 import setClientData from './set-client-data';
 
@@ -26,6 +26,7 @@ self.onfetch = evt => {
   if (!url.startsWith(ownRoot)) {
     return; // shouldn't happen but addRoutes may be bugged
   }
+  keepAlive();
   if (url.includes('?clientData')) {
     evt.respondWith(setClientData(evt, new URL(url)));
   } else if (/\.user.css#\d+$/.test(url)) {
@@ -33,16 +34,14 @@ self.onfetch = evt => {
   }
 };
 
-{ // API
-  const exec = _execute.bind(null, 'extension');
-  self.onmessage = evt => {
-    if (evt.data?.[0] === 'port') {
-      initRemotePort(evt, exec);
-    }
-  };
-}
+// API
+self.onmessage = initRemotePort.bind(_execute.bind(null, 'extension'));
 
-API.worker = createPortProxy(() => offscreen.getWorkerPort(workerPath), workerPath);
+API.worker = createPortProxy(async () => {
+  const [client] = await self.clients.matchAll({type: 'window'});
+  const proxy = client ? createPortProxy(client, {once: true}) : offscreen;
+  return proxy.getWorkerPort(workerPath);
+}, {lock: workerPath});
 
 cloudDrive.webdav = async cfg => {
   const res = await offscreen.webdavInit(cfg);

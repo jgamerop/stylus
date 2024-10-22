@@ -49,7 +49,7 @@ export function _execute(target, ...args) {
       }
     }
   }
-  return result;
+  return process.env.KEEP_ALIVE(result);
 }
 
 export function onRuntimeMessage({data, target}, sender, sendResponse) {

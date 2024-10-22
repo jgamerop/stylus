@@ -213,6 +213,7 @@ async function authUserMV2(url, interactive, redirectUri) {
 
 async function authUserMV3(url, interactive, redirectUri) {
   if (redirectUri) {
+    // FIXME: see if this works, otherwise use a content script to redirect to DEFAULT_REDIRECT_URI
     await updateDNR([{
       id: DNR_ID_IDENTITY,
       condition: {
@@ -232,7 +233,7 @@ async function authUserMV3(url, interactive, redirectUri) {
   try {
     return await chrome.identity.launchWebAuthFlow({interactive, url});
   } finally {
-    await updateDNR(null, [DNR_ID_IDENTITY]);
+    if (redirectUri) await updateDNR(null, [DNR_ID_IDENTITY]);
   }
 }
 

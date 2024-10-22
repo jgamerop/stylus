@@ -5,7 +5,7 @@ import * as prefs from '/js/prefs';
 import {chromeLocal, chromeSync} from '/js/storage-util';
 import {fetchWebDAV, hasOwn} from '/js/util-base';
 import {broadcastExtension} from './broadcast';
-import {bgReady, uuidIndex} from './common';
+import {uuidIndex} from './common';
 import db from './db';
 import {cloudDrive, dbToCloud} from './db-to-cloud-broker';
 import {overrideBadge} from './icon-manager';
@@ -14,19 +14,29 @@ import {getToken, revokeToken} from './token-manager';
 
 //#region Init
 
-const SYNC_DELAY = 1; // minutes
-const SYNC_INTERVAL = 30; // minutes
-const STATES = Object.freeze({
-  connected: 'connected',
-  connecting: 'connecting',
-  disconnected: 'disconnected',
-  disconnecting: 'disconnecting',
-});
+const ALARM_ID = 'syncNow';
+const PREF_ID = 'sync.enabled';
+const SYNC_DELAY = process.env.MV3
+  ? 27 / 60 // ensuring it runs within the minimum lifetime of SW
+  : 1;
+const SYNC_INTERVAL = 30; // minutes, may be fractional
+const CONNECTED = 'connected';
+const CONNECTING = 'connecting';
+const DISCONNECTED = 'disconnected';
+const DISCONNECTING = 'disconnecting';
+const PENDING = 'pending';
+const STATES = {
+  connected: CONNECTED,
+  connecting: CONNECTING,
+  disconnected: DISCONNECTED,
+  disconnecting: DISCONNECTING,
+  pending: PENDING,
+};
 const STORAGE_KEY = 'sync/state/';
 const NO_LOGIN = ['webdav'];
 const status = /** @namespace SyncManager.Status */ {
   STATES,
-  state: STATES.disconnected,
+  state: PENDING,
   syncing: false,
   progress: null,
   currentDriveName: null,
@@ -36,41 +46,52 @@ const status = /** @namespace SyncManager.Status */ {
 const compareRevision = (rev1, rev2) => rev1 - rev2;
 let lastError = null;
 let ctrl;
-let currentDrive;
-/** @type {Promise|boolean} will be `true` to avoid wasting a microtask tick on each `await` */
-let ready = bgReady.styles.then(() => {
-  ready = true;
-  prefs.subscribe('sync.enabled',
-    (_, val) => val === 'none'
-      ? stop()
-      : start(val, true),
-    true);
-});
+let curDrive;
+let curDriveName;
+let delayedInit;
+let statusServed;
 
-chrome.alarms.onAlarm.addListener(async ({name}) => {
-  if (name === 'syncNow') {
-    await syncNow();
+prefs.subscribe(PREF_ID, async (_, val) => {
+  const alarm = await browser.alarms.get(ALARM_ID);
+  const isOn = hasOwn(cloudDrive, val);
+  delayedInit = isOn && val;
+  if (!isOn && alarm) {
+    chrome.alarms.clear(ALARM_ID);
+  } else if (isOn && (!alarm || alarm.periodInMinutes !== SYNC_INTERVAL)) {
+    chrome.alarms.create(ALARM_ID, {
+      delayInMinutes: SYNC_DELAY,
+      periodInMinutes: SYNC_INTERVAL,
+    });
   }
+  if (!isOn) {
+    status.state = DISCONNECTED;
+    if (statusServed) emitStatusChange();
+  }
+}, true);
+
+chrome.alarms.onAlarm.addListener(a => {
+  if (a.name === ALARM_ID) process.env.KEEP_ALIVE(syncNow());
 });
 
 //#endregion
 //#region Exports
 
 export async function remove(...args) {
-  if (ready.then) await ready;
-  if (!currentDrive) return;
-  schedule();
+  if (delayedInit) await start();
+  if (!curDrive) return;
   return ctrl.delete(...args);
 }
 
 /** @returns {Promise<SyncManager.Status>} */
 export function getStatus() {
+  if (delayedInit) start(); // not awaiting (could be slow), we'll broadcast the updates
+  statusServed = true;
   return status;
 }
 
 export async function login(name) {
-  if (ready.then) await ready;
-  if (!name) name = prefs.get('sync.enabled');
+  if (delayedInit) await start();
+  if (!name) name = curDriveName;
   await revokeToken(name);
   try {
     await getToken(name, true);
@@ -84,9 +105,8 @@ export async function login(name) {
 }
 
 export async function putDoc({_id, _rev}) {
-  if (ready.then) await ready;
-  if (!currentDrive) return;
-  schedule();
+  if (delayedInit) await start();
+  if (!curDrive) return;
   return ctrl.put(_id, _rev);
 }
 
@@ -100,76 +120,73 @@ export async function getDriveOptions(driveName) {
   return await chromeSync.getValue(key) || {};
 }
 
-export async function start(name, fromPref = false) {
-  if (ready.then) await ready;
+export async function start(name = delayedInit) {
+  const isInit = name && name === delayedInit;
+  const isStop = status.state === DISCONNECTING;
+  delayedInit = false;
   if ((ctrl ??= initController()).then) ctrl = await ctrl;
-
-  if (currentDrive) return;
-  if ((currentDrive = getDrive(name)).then) { // preventing re-entry by assigning synchronously
-    currentDrive = await currentDrive;
+  if (curDrive) return;
+  if ((curDrive = getDrive(name)).then) { // preventing re-entry by assigning synchronously
+    curDrive = await curDrive;
   }
-  ctrl.use(currentDrive);
-
-  status.state = STATES.connecting;
-  status.currentDriveName = currentDrive.name;
+  ctrl.use(curDrive);
+  curDriveName = name;
+  status.state = CONNECTING;
+  status.currentDriveName = curDriveName;
   emitStatusChange();
-
-  if (fromPref || NO_LOGIN.includes(currentDrive.name)) {
+  if (isInit || NO_LOGIN.includes(curDriveName)) {
     status.login = true;
   } else {
     try {
       await login(name);
     } catch (err) {
       console.error(err);
-      status.errorMessage = err.message;
-      lastError = err;
+      setError(err);
       emitStatusChange();
       return stop();
     }
   }
-
   await ctrl.init();
-
+  if (isStop) return;
   await syncNow(name);
-  prefs.set('sync.enabled', name);
-  status.state = STATES.connected;
-  schedule(SYNC_INTERVAL);
+  prefs.set(PREF_ID, name);
+  status.state = CONNECTED;
   emitStatusChange();
 }
 
 export async function stop() {
-  if (ready.then) await ready;
-  if (!currentDrive) return;
-  chrome.alarms.clear('syncNow');
-  status.state = STATES.disconnecting;
+  if (delayedInit) {
+    status.state = DISCONNECTING;
+    try { await start(); } catch {}
+  }
+  if (!curDrive) return;
+  status.state = DISCONNECTING;
   emitStatusChange();
   try {
     await ctrl.uninit();
-    await revokeToken(currentDrive.name);
-    await chromeLocal.remove(STORAGE_KEY + currentDrive.name);
+    await revokeToken(curDriveName);
+    await chromeLocal.remove(STORAGE_KEY + curDriveName);
   } catch {}
-  currentDrive = null;
-  prefs.set('sync.enabled', 'none');
-  status.state = STATES.disconnected;
+  curDrive = curDriveName = null;
+  prefs.set(PREF_ID, 'none');
+  status.state = DISCONNECTED;
   status.currentDriveName = null;
   status.login = false;
   emitStatusChange();
 }
 
 export async function syncNow() {
-  if (ready.then) await ready;
-  if (!currentDrive || !status.login) {
+  if (delayedInit) await start();
+  if (!curDrive || !status.login) {
     console.warn('cannot sync when disconnected');
     return;
   }
   try {
     await ctrl.syncNow();
-    status.errorMessage = null;
-    lastError = null;
+    setError();
   } catch (err) {
     err.message = translateErrorMessage(err);
-    status.errorMessage = err.message;
-    lastError = err;
+    setError(err);
     if (isGrantError(err)) {
       status.login = false;
     }
@@ -222,6 +239,7 @@ function initController() {
       } else {
         status.progress = e;
       }
+      if (lastError) setError();
       emitStatusChange();
     },
     compareRevision,
@@ -288,11 +306,9 @@ async function getDrive(name) {
   return cloudDrive[name](options);
 }
 
-function schedule(delay = SYNC_DELAY) {
-  chrome.alarms.create('syncNow', {
-    delayInMinutes: delay, // fractional values are supported
-    periodInMinutes: SYNC_INTERVAL,
-  });
+function setError(err) {
+  status.errorMessage = err?.message;
+  lastError = err;
 }
 
 function translateErrorMessage(err) {

@@ -220,7 +220,7 @@ function mergeCfg(ovr, base) {
     if (FS_CACHE) {
       ovr.cache = {
         ...ovr.cache,
-        name: entry.join('-'),
+        name: [BUILD, MV3 ? 'mv3' : 'mv2', ...entry].join('-'),
       };
     }
     if (process.env.REPORT != null) {
